@@ -403,6 +403,66 @@ func (c *Client) GetField() ([]*Field, error) {
 	return out, err
 }
 
+// IssueRankPayload defines the request body for ranking issues.
+type IssueRankPayload struct {
+	Issues            []string `json:"issues"`
+	RankBeforeIssue   string   `json:"rankBeforeIssue,omitempty"`
+	RankAfterIssue    string   `json:"rankAfterIssue,omitempty"`
+	// RankCustomFieldID is for specific Jira configurations (e.g., Portfolio).
+	// For now, we will rely on the default rank field and not expose this.
+	// RankCustomFieldID int64    `json:"rankCustomFieldId,omitempty"`
+}
+
+// RankIssues changes the rank of one or more issues.
+// It calls the PUT /rest/agile/1.0/issue/rank endpoint.
+func (c *Client) RankIssues(payload IssueRankPayload) error {
+	if len(payload.Issues) == 0 {
+		return fmt.Errorf("no issues provided to rank")
+	}
+	if payload.RankBeforeIssue == "" && payload.RankAfterIssue == "" {
+		return fmt.Errorf("either rankBeforeIssue or rankAfterIssue must be specified")
+	}
+	if payload.RankBeforeIssue != "" && payload.RankAfterIssue != "" {
+		return fmt.Errorf("rankBeforeIssue and rankAfterIssue cannot both be specified")
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal rank issues payload: %w", err)
+	}
+
+	res, err := c.PutV1(context.Background(), "/issue/rank", body, Header{
+		"Accept":       "application/json",
+		"Content-Type": "application/json",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to call rank issues API: %w", err)
+	}
+	if res == nil {
+		return ErrEmptyResponse
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	// According to Jira Agile API documentation:
+	// 204 No Content: Empty response is returned if operation was successful.
+	// 207 Multi-Status: If the operation fails for some issues.
+	// Other codes like 400, 401, 403 for other errors.
+	if res.StatusCode == http.StatusNoContent {
+		return nil // Success
+	}
+
+	// For 207 Multi-Status or other errors, try to provide more info.
+	// A full implementation for 207 would parse the response body for details on each issue.
+	// For now, we'll return a generic error with the status code.
+	if res.StatusCode == http.StatusMultiStatus {
+		// TODO: Parse response body for detailed error messages per issue for 207.
+		// For now, a general message.
+		return fmt.Errorf("rank issues operation resulted in multi-status (some may have failed): %s", res.Status)
+	}
+	
+	return formatUnexpectedResponse(res)
+}
+
 func ifaceToADF(v interface{}) *adf.ADF {
 	if v == nil {
 		return nil
