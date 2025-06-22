@@ -244,6 +244,26 @@ func (c *Client) DeleteV2(ctx context.Context, path string, headers Header) (*ht
 	return c.request(ctx, http.MethodDelete, c.server+baseURLv2+path, nil, headers)
 }
 
+// Rank ranks an issue in Jira.
+func (c *Client) Rank(ctx context.Context, data RankInput) error {
+	body, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.request(ctx, http.MethodPut, c.server+baseURLv1+"/issue/rank", body, Header{"Content-Type": "application/json"})
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return formatUnexpectedResponse(resp)
+	}
+
+	return nil
+}
+
 func (c *Client) request(ctx context.Context, method, endpoint string, body []byte, headers Header) (*http.Response, error) {
 	var (
 		req *http.Request
