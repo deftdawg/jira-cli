@@ -405,6 +405,39 @@ $ jira issue move ISSUE-1 "In Progress"
 If your workflow allows to add comment, resolution or assignee while moving an issue, you can do so as shown below.
 See [this documentation](https://confluence.atlassian.com/jirakb/how-to-add-a-comment-during-a-transition-779160682.html) on how to setup your workflow to allow these fields.
 
+#### Rank
+The `rank` command lets you change the order of issues, for example, within a b
+acklog or a sprint. You rank an issue or multiple issues relative to a reference
+ issue.
+
+*Syntax:*
+`jira issue rank <TARGET_ISSUE_KEY_OR_KEYS> --before <REFERENCE_ISSUE_KEY>`
+`jira issue rank <TARGET_ISSUE_KEY_OR_KEYS> --after <REFERENCE_ISSUE_KEY>`
+
+-   `<TARGET_ISSUE_KEY_OR_KEYS>`: A single issue key (e.g., `PROJECT-123`) or a
+ comma-separated list of issue keys (e.g., `PROJECT-123,PROJECT-124`) to be rank
+ed.
+-   `--before <REFERENCE_ISSUE_KEY>`: Ranks the target issue(s) immediately bef
+ore the specified reference issue.
+-   `--after <REFERENCE_ISSUE_KEY>`: Ranks the target issue(s) immediately afte
+r the specified reference issue.
+
+You must specify exactly one of `--before` or `--after`.
+
+*Examples:*
+
+```sh
+# Rank ISSUE-10 immediately after ISSUE-5
+$ jira issue rank ISSUE-10 --after ISSUE-5
+
+# Rank ISSUE-15 immediately before ISSUE-20
+$ jira issue rank ISSUE-15 --before ISSUE-20
+
+# Rank ISSUE-1,ISSUE-2 immediately after ISSUE-3
+# This will place ISSUE-1 then ISSUE-2 directly after ISSUE-3
+$ jira issue rank ISSUE-1,ISSUE-2 --after ISSUE-3
+```
+
 ```sh
 # Move an issue and add comment
 $ jira issue move ISSUE-1 "In Progress" --comment "Started working on it"
